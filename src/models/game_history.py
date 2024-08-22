@@ -9,7 +9,7 @@ class PlayerState(BaseModel):
 
 
 class FinalState(BaseModel):
-    player_states: List[PlayerState]
+    player_states: Optional[List[PlayerState]]
     number_of_cards_in_deck: int
     number_of_coins_in_treasury: int
 

@@ -3,14 +3,12 @@ from enum import Enum
 from typing import List, Optional, Tuple, Union
 import io
 import sys
-
 import names
-
 from src.models.action import Action, ActionType, CounterAction, get_counter_action
 from src.models.card import Card, build_deck
-from src.models.players.ai import AIPlayer
 from src.models.players.base import BasePlayer
 from src.models.players.human import HumanPlayer
+from src.models.players.llm_player.llm_player import LLMPlayer
 from src.models.game_history import GameHistory, HistoryRecord, FinalState, PlayerState
 from src.utils.game_state import generate_players_table, generate_state_panel
 from src.utils.print import (
@@ -53,7 +51,8 @@ class ResistanceCoupGameHandler:
 
                 unique_names.add(ai_name)
 
-                self._players.append(AIPlayer(name=ai_name, game_handler=self))
+                # self._players.append(AIPlayer(name=ai_name, game_handler=self))
+                self._players.append(LLMPlayer(name=ai_name, game_handler=self))
         else:
             # Set up players
             self._players.append(HumanPlayer(name=player_name, game_handler=self))
@@ -68,7 +67,8 @@ class ResistanceCoupGameHandler:
 
                 unique_names.add(ai_name)
 
-                self._players.append(AIPlayer(name=ai_name, game_handler=self))
+                # self._players.append(AIPlayer(name=ai_name, game_handler=self))
+                self._players.append(LLMPlayer(name=ai_name, game_handler=self))
 
     @property
     def current_player(self) -> BasePlayer:
@@ -81,11 +81,15 @@ class ResistanceCoupGameHandler:
 
     def _capture_print_output(self, func, *args, **kwargs):
         """Captures the printed output of a function and returns it as a string."""
+        func(*args)
         captured_output = io.StringIO()
         sys.stdout = captured_output
         func(*args, **kwargs)
         sys.stdout = sys.__stdout__  # Restore the original stdout
         return captured_output.getvalue()
+
+    def get_game_history(self) -> GameHistory:
+        return self._game_history
 
     def print_game_state(self) -> None:
         # Print the table and panel directly without capturing
@@ -109,6 +113,8 @@ class ResistanceCoupGameHandler:
 
         self._treasury = 50 - 2 * len(self._players)
 
+        player_states = []
+
         for player in self._players:
             player.reset_player()
 
@@ -122,11 +128,34 @@ class ResistanceCoupGameHandler:
             # Includes the player in the game
             player.is_active = True
 
+            player_states.append(PlayerState(
+                name=player.name,
+                number_of_coins=2,
+                number_of_cards=2
+            ))
+
+        final_state = FinalState(
+            player_states=player_states,
+            number_of_cards_in_deck=len(self._deck),
+            number_of_coins_in_treasury=self._treasury
+        )
+
         # Random starting player
         self._current_player_index = random.randint(0, self._number_of_players - 1)
 
         # Reset game history, turn count, and current turn messages
-        self._game_history = GameHistory(history=[])
+        self._game_history = GameHistory(history=[
+            HistoryRecord(
+                turn=0,  # Initial turn
+                current_player="Game Start",
+                messages=["Game Started"],
+                final_state=final_state
+            )
+        ])
+
+        # Now record the initial state
+        # self._game_history.history[0].final_state = self._record_final_state()
+
         self._turn_count = 0
         self._current_turn_messages = []
 
@@ -177,6 +206,7 @@ class ResistanceCoupGameHandler:
         captured_output = self._capture_print_output(
             print_text, action_message, with_markup=True
         )
+
         self._current_turn_messages.append(captured_output)
 
         return target_action, target_player
@@ -185,7 +215,7 @@ class ResistanceCoupGameHandler:
             self, player_being_challenged: BasePlayer, card: Card, challenger: BasePlayer
     ):
         # Player being challenged reveals the card
-        message = f"{player_being_challenged} reveals their {card} card!"
+        # message = f"{player_being_challenged} reveals their {card} card!"
         captured_output = self._capture_print_output(
             print_texts,
             f"{player_being_challenged} reveals their ",

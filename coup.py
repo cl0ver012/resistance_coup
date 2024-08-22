@@ -3,6 +3,9 @@ import sys
 from rich.panel import Panel
 from rich.text import Text
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from src.handler.game_handler import ResistanceCoupGameHandler
 from src.utils.print import (
     console,
@@ -16,6 +19,7 @@ console.clear()
 
 
 def main():
+
     text = Text(
         """
         In the not too distant future, the government is run for profit by a new 'royal class' of multinational CEOs.
@@ -57,7 +61,9 @@ def main():
     # Play the game
     while game_ready:
         handler.setup_game()
+        handler.print_game_history()
 
+        print("=====================")
         # Take turns until we have a winner
         end_state = False
         turn_count = 0
