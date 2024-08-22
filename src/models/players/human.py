@@ -15,6 +15,10 @@ from src.utils.print import (
 class HumanPlayer(BasePlayer):
     is_ai: bool = False
 
+    def __init__(self, name: str, game_handler: 'ResistanceCoupGameHandler', **data):
+        super().__init__(name=name, is_ai=False, **data)
+        self._game_handler = game_handler
+
     def _choose_action(
         self, other_players: List[BasePlayer]
     ) -> Tuple[Action, Optional[BasePlayer]]:
@@ -100,9 +104,11 @@ class HumanPlayer(BasePlayer):
 
         discarded_card = self.cards.pop(int(chosen_card_ind))
 
+        message = f"{self} discarded their {discarded_card} card"
         print_texts(
             f"{self} discarded their ", (f"{discarded_card}", discarded_card.style), " card"
         )
+        self._game_handler.log_message(message)
 
     def choose_exchange_cards(self, exchange_cards: list[Card]) -> Tuple[Card, Card]:
         """Perform the exchange action. Pick which 2 cards to send back to the deck"""

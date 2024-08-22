@@ -46,7 +46,10 @@ def main():
 
     console.print()
     player_name = print_prompt("What is your name, player?")
-    handler = ResistanceCoupGameHandler(player_name, 5)
+
+    ai_play = print_confirm("Do you wanna continue game only with AI players?")
+
+    handler = ResistanceCoupGameHandler(player_name, 5, ai_play)
 
     console.print()
     game_ready = print_confirm("Ready to start?")
@@ -70,6 +73,9 @@ def main():
             end_state = handler.handle_turn()
 
         console.print()
+
+        console.print("======================")
+        handler.print_game_history()
         game_ready = print_confirm("Want to play again?")
 
     print_blank()
