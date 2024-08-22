@@ -3,7 +3,6 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel
 
 from langgraph.graph import StateGraph
-from langchain.llms import OpenAI
 
 from src.models.action import Action
 from src.models.card import Card
@@ -20,7 +19,11 @@ from src.models.players.llm_player.nodes import (
     select_target_node,
     validate_action_node,
     validate_action,
-    parse_action_node
+    parse_action_node,
+    determine_challenge,
+    determine_counter,
+    remove_card,
+    choose_exchange_cards
 )
 
 
@@ -88,32 +91,37 @@ class LLMPlayer(BasePlayer):
 
     def determine_challenge(self, player: BasePlayer) -> bool:
         """Choose whether to challenge the current player"""
-
-        # 20% chance of challenging
-        return random.randint(0, 4) == 0
+        game_history = self._game_handler.get_game_history()
+        return determine_challenge(self, player, game_history)
 
     def determine_counter(self, player: BasePlayer) -> bool:
         """Choose whether to counter the current player's action"""
-
-        # 10% chance of countering
-        return random.randint(0, 9) == 0
+        game_history = self._game_handler.get_game_history()
+        return determine_counter(self, player, game_history)
 
     def remove_card(self) -> None:
         """Choose a card and remove it from your hand"""
-
+        game_history = self._game_handler.get_game_history()
         # Remove a random card
-        discarded_card = self.cards.pop(random.randrange(len(self.cards)))
+        if len(self.cards) == 1:
+            discarded_card = self.cards.pop()
+        else:
+            discarded_card = remove_card(self, game_history)
+            for i, card in enumerate(self.cards):
+                if str(card) == str(discarded_card):
+                    del self.cards[i]
+                    break
         message = f"{self} discards their {discarded_card} card"
         print_texts(f"{self} discards their ", (f"{discarded_card}", discarded_card.style), " card")
         self._game_handler.log_message(message)
 
     def choose_exchange_cards(self, exchange_cards: list[Card]) -> Tuple[Card, Card]:
         """Perform the exchange action. Pick which 2 cards to send back to the deck"""
+        game_history = self._game_handler.get_game_history()
 
-        self.cards += exchange_cards
-        random.shuffle(self.cards)
+        first_card, second_card = choose_exchange_cards(self, exchange_cards, game_history)
         message = f"{self} exchanges 2 cards"
         print_text(message)
         self._game_handler.log_message(message)
 
-        return self.cards.pop(), self.cards.pop()
+        return first_card, second_card
