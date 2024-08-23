@@ -12,3 +12,4 @@ class ChooseActionGraphState(BaseModel):
     selected_action: Optional[Action] = None
     other_players: Optional[List[BasePlayer]] = None
     selected_target: Optional[BasePlayer] = None
+    message: Optional[str] = None

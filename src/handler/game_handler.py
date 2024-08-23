@@ -9,6 +9,7 @@ from src.models.card import Card, build_deck
 from src.models.players.base import BasePlayer
 from src.models.players.human import HumanPlayer
 from src.models.players.llm_player.llm_player import LLMPlayer
+from src.models.players.llm_player.llm_player import generate_message
 from src.models.game_history import GameHistory, HistoryRecord, FinalState, PlayerState
 from src.utils.game_state import generate_players_table, generate_state_panel
 from src.utils.print import (
@@ -153,8 +154,6 @@ class ResistanceCoupGameHandler:
             )
         ])
 
-        # Now record the initial state
-        # self._game_history.history[0].final_state = self._record_final_state()
 
         self._turn_count = 0
         self._current_turn_messages = []
@@ -207,6 +206,7 @@ class ResistanceCoupGameHandler:
             print_text, action_message, with_markup=True
         )
 
+        self._log_player_message(self.current_player, target_action, target_player)
         self._current_turn_messages.append(captured_output)
 
         return target_action, target_player
@@ -222,6 +222,13 @@ class ResistanceCoupGameHandler:
             (f"{card}", card.style),
             " card!",
         )
+
+        history = self._game_history
+        history.history[-1].messages = self._current_turn_messages
+
+        player_message = generate_message(challenger, "challenge_failed", player_being_challenged, history)
+        self._current_turn_messages.append(f"{self.current_player} said: {player_message}")
+
         self._current_turn_messages.append(captured_output)
         captured_output = self._capture_print_output(
             print_text, f"{challenger} loses the challenge"
@@ -241,6 +248,8 @@ class ResistanceCoupGameHandler:
     def _challenge_against_player_succeeded(self, player_being_challenged: BasePlayer):
         message = f"{player_being_challenged} bluffed! They do not have the required card!"
         captured_output = self._capture_print_output(print_text, message)
+
+        self._log_player_message(player_being_challenged, "challenge_succeed", None)
         self._current_turn_messages.append(captured_output)
 
         # Player being challenged loses influence (chooses a card to remove)
@@ -258,6 +267,7 @@ class ResistanceCoupGameHandler:
             if should_challenge:
                 challenge_message = f"{challenger} is challenging {player_being_challenged}!"
                 if challenger.is_ai:
+                    self._log_player_message(challenger, "challenge", player_being_challenged)
                     captured_output = self._capture_print_output(print_text, challenge_message)
                     self._current_turn_messages.append(captured_output)
 
@@ -293,6 +303,8 @@ class ResistanceCoupGameHandler:
                     counter=target_counter,
                     countering_player=countering_player,
                 )
+
+                self._log_player_message(countering_player, target_counter, self.current_player)
                 captured_output = self._capture_print_output(print_text, counter_message)
                 self._current_turn_messages.append(captured_output)
 
@@ -303,6 +315,8 @@ class ResistanceCoupGameHandler:
     def _execute_action(
             self, action: Action, target_player: BasePlayer, countered: bool = False
     ) -> None:
+
+        self._log_player_message(self.current_player, action, target_player)
         match action.action_type:
             case ActionType.income:
                 # Player gets 1 coin
@@ -444,6 +458,7 @@ class ResistanceCoupGameHandler:
         while player := self._remove_defeated_player():
             if player.is_ai:
                 message = f"{player} was defeated! :skull: :skull: :skull:"
+                self._log_player_message(player, "defeated", None)
                 captured_output = self._capture_print_output(print_text, message, with_markup=True)
                 self._current_turn_messages.append(captured_output)
             else:
@@ -459,6 +474,7 @@ class ResistanceCoupGameHandler:
         if self._determine_win_state():
             message = f":raising_hands: Congratulations {self.remaining_player}! You are the final survivor!"
             captured_output = self._capture_print_output(print_text, message, with_markup=True)
+            self._log_player_message(self.remaining_player, "survival", None)
             self._current_turn_messages.append(captured_output)
             self._record_final_state()
             return True
@@ -508,3 +524,10 @@ class ResistanceCoupGameHandler:
     def log_message(self, message: str):
         """Logs a message to the current turn's history."""
         self._current_turn_messages.append(message)
+
+    def _log_player_message(self, player: BasePlayer, action: Action | CounterAction | str, target_player: Optional[BasePlayer]):
+        history = self._game_history
+        history.history[-1].messages = self._current_turn_messages
+        player_message = generate_message(player, action, target_player, history)
+        print(f"{player} said: {player_message}")
+        self._current_turn_messages.append(f"{player} said: {player_message}")

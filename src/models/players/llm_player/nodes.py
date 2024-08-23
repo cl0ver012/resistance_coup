@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from langchain_core.messages import SystemMessage
 from langchain_openai import ChatOpenAI
@@ -7,6 +7,27 @@ from .graph_state import ChooseActionGraphState
 from src.models.game_history import GameHistory
 from src.models.players.base import BasePlayer
 from src.models.card import Card
+from src.models.action import Action, TaxAction, CoupAction, ForeignAidAction, StealAction, CounterAction, IncomeAction, ExchangeAction, AssassinateAction
+
+generate_message_function = [
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_message",
+            "description": "This function is called to generate text message based on action of game, for example 'oh, you chose that? then I will use my Contessa.', etc",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "This property returns the message of the player."
+                    }
+                },
+                "required": ["message"]
+            }
+        }
+    }
+]
 
 choose_action_function = [
     {
@@ -424,3 +445,83 @@ def validate_action(state: ChooseActionGraphState) -> bool:
 
 def parse_action_node(state: ChooseActionGraphState) -> ChooseActionGraphState:
     return state
+
+
+def generate_message(player: BasePlayer, action: Action | CounterAction | str, target_player: Optional[BasePlayer], game_history: GameHistory) -> str:
+    game_history = game_history_to_str(game_history)
+    prompt = ""
+    if isinstance(action, IncomeAction) or isinstance(action, ForeignAidAction) or isinstance(action, TaxAction) or isinstance(action, ExchangeAction):
+        prompt = (
+            f"You are professional coup game player called {player}. It is your turn and you make decision to preceed with {str(action)}\n"    
+            "Here are previous game histories.\n"
+            f"{game_history}"
+            "\n\n\nPlease generate message to say while you proceed the action."
+        )
+
+    elif isinstance(action, CoupAction) or isinstance(action, AssassinateAction) or isinstance(action, StealAction):
+        prompt = (
+            f"You are professional coup game player called {player}. It is your turn and you make decision to preceed with {str(action)} targeted to {target_player}\n"
+            "Here are previous game histories.\n"
+            f"{game_history}"
+            "\n\n\nPlease generate message to say while you proceed the action."
+        )
+
+    elif isinstance(action, CounterAction):
+        prompt = (
+            f"You are professional coup game player called {player}. You make decision to counter the action of {target_player}\n"
+            "Here are previous game histories.\n"
+            f"{game_history}"
+            "\n\n\nPlease generate message to say while you proceed."
+        )
+
+    elif action == "challenge":
+        prompt = (
+            f"You are professional coup game player called {player}. You are now challenging the action of {target_player}\n"
+            "Here are previous game histories.\n"
+            f"{game_history}"
+            "\n\n\nPlease generate message to say."
+        )
+
+    elif action == "challenge_failed":
+        prompt = (
+            f"You are professional coup game player called {player}. You make decision to challenge the action of {target_player}, but challenge has been failed.\n"
+            "Here are previous game histories.\n"
+            f"{game_history}"
+            "\n\n\nPlease generate message to say."
+        )
+
+    elif action == "challenge_succeed":
+        prompt = (
+            f"You are professional coup game player called {player}. You got challenged from other player and have failed cause you bluffed\n"
+            "Here are previous game histories.\n"
+            f"{game_history}"
+            "\n\n\nPlease generate message to say."
+        )
+
+    elif action == "defeated":
+        prompt = (
+            f"You are professional coup game player called {player}. But you defeated from the game\n"
+            "Here are previous game histories.\n"
+            f"{game_history}"
+            "\n\n\nPlease generate message to say."
+        )
+
+    elif action == "survival":
+        prompt = (
+            f"You are professional coup game player called {player}. You finally become the last survival of the game\n"
+            "Here are previous game histories.\n"
+            f"{game_history}"
+            "\n\n\nPlease generate message to say."
+        )
+
+    model = ChatOpenAI(
+        model="gpt-4o-2024-08-06",
+    )
+
+    generate_message_model = model.bind_tools(generate_message_function, tool_choice="generate_message")
+    messages = [SystemMessage(prompt)]
+    tool_call = generate_message_model.invoke(messages).tool_calls
+
+    message = tool_call[0]['args']['message']
+
+    return message
