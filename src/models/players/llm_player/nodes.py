@@ -152,6 +152,34 @@ def check_coup(state: ChooseActionGraphState) -> bool:
 
 def select_coup_target_node(state: ChooseActionGraphState) -> ChooseActionGraphState:
     """Selects a target player for the Coup action."""
+    other_player_names = [str(player) for player in state.other_players]
+    selected_action = state.player.available_actions()[0]
+    cards = [str(card) for card in state.player.cards]
+    coins = state.player.coins
+    game_history = game_history_to_str(state.game_history)
+
+    prompt = (
+        f"You are professional coup game player called {state.player}. You selected target player for coup action. And now you need to determine target player.\n"
+        f"You need to choose one player from {other_player_names}\n"
+        f"You have {cards} on the hand and {coins} coins."
+
+        "Here are previous game histories. You need to analyze this history and make the best decision\n"
+        f"{game_history}"
+    )
+
+    model = ChatOpenAI(
+        model="gpt-4o-2024-08-06",
+    )
+
+    choose_target_player_function[0]["function"]["parameters"]["properties"]["player"]["enum"] = other_player_names
+    choose_target_model = model.bind_tools(choose_target_player_function, tool_choice="choose_player")
+    messages = [SystemMessage(prompt)]
+
+    tool_call = choose_target_model.invoke(messages).tool_calls
+    selected_player_name = tool_call[0]['args']['player']
+    selected_target = next((player for player in state.other_players if str(player) == selected_player_name), None)
+    state.selected_target = selected_target
+    state.selected_action = selected_action
     return state
 
 
@@ -254,8 +282,8 @@ def determine_challenge(player: BasePlayer, challenged_player: BasePlayer, game_
 
     prompt = (
         f"You are professional coup game player called {player}. This is the {challenged_player}'s turn. You need to determine weather challenge {str(challenged_player)} or not.\n"
-        f"You have {cards} on the hand and {coins} coins."
-        "Please be carefully while challenging other because if you lose the callenge, you need to discard one of your card. Please make safe decisions.",
+        f"You have {cards} on the hand and {coins} coins.\n"
+        "Please be carefully while challenging other because if you lose the callenge, you need to discard one of your card. Please make safe decisions."
         "Here are previous game histories. You need to analyze this history and make the best decision\n"
         f"{game_history}"
     )
@@ -284,7 +312,6 @@ def determine_counter(player: BasePlayer, challenged_player: BasePlayer, game_hi
     prompt = (
         f"You are professional coup game player called {player}. This is the {challenged_player}'s turn. You need to determine weather counter {str(challenged_player)}'s action or not.\n"
         f"You have {cards} on the hand and {coins} coins."
-
         "Here are previous game histories. You need to analyze this history and make the best decision\n"
         f"{game_history}"
     )

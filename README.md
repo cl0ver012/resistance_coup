@@ -1,111 +1,57 @@
-<br/>
-<p align="center">
-  <h3 align="center">The Resistance: Coup</h3>
-
-  <p align="center">
-    A text-based version of the popular party game!
-    <br/>
-    <br/>
-    <a href="https://github.com/dirkbrnd/resistance_coup/issues">Request Feature</a>
-  </p>
-</p>
-
-![Downloads](https://img.shields.io/github/downloads/dirkbrnd/resistance_coup/total) ![Contributors](https://img.shields.io/github/contributors/dirkbrnd/resistance_coup?color=dark-green) ![Issues](https://img.shields.io/github/issues/dirkbrnd/resistance_coup) ![License](https://img.shields.io/github/license/dirkbrnd/resistance_coup) 
-
 ## About The Project
-<p align="center">
-    <img src="assets/coup_game.png" alt="Coup Game" width="300"/>
-</p>
 
-
-This is a terminal text-based version of [The Resistance: Coup](https://www.ultraboardgames.com/coup/game-rules.php#google_vignette). I suggest you make yourself familiar with the rules before playing!
+This is an updated version of the terminal text-based game [The Resistance: Coup](https://www.ultraboardgames.com/coup/game-rules.php#google_vignette). It builds upon the original project by [dirkbrnd](https://github.com/dirkbrnd/resistance_coup) and introduces a new level of challenge with AI opponents powered by a Large Language Model (LLM) using LangGraph.
 
 In a nutshell:
 
 * You have some character cards representing government officials you have influence over.
-* You can perform actions to sabotage other players and reduce their influence (i.e. remove their cards)
+* You can perform actions to sabotage other players and reduce their influence (i.e., remove their cards).
 * The last person with any cards left is the winner!
 
-The main package to mention here is [Rich](https://github.com/Textualize/rich). It was instrumental in making it as pretty as possible on the terminal!
+This version now features enhanced AI players driven by an LLM, providing a more dynamic and engaging gaming experience.
 
 ## Getting Started
 
 ### Prerequisites
 
-* This project is built on Python 3.11.
-* The packages are maintained with [poetry](https://github.com/python-poetry/poetry).
+* Python 3.12
+* Poetry (for dependency management)
 
-### Steps to get playing
+### Setting Up the Environment
 
-1. Clone the repo
+1. **Clone the repository:**
 
-```sh
-git clone https://github.com/dirkbrnd/resistance_coup.git
-```
+   ```bash
+   git clone https://github.com/cl0ver012/resistance_coup.git
+   ```
 
-2. Install the game
+2. **Install dependencies using Poetry:**
 
-```sh
-poetry install
-```
+   ```bash
+   cd resistance_coup
+   poetry install
+   ```
 
-3. Launch!
+## How to Run
 
-```sh
-python coup.py
-```
+1. **Launch the game:**
 
-## Usage
+   ```bash
+   python coup.py
+   ```
 
-![Screen Shot](assets/game_state.png)
+2. **Enter your name when prompted.**
 
-* When the game starts it will ask your name.
-* You will play against 4 other AI players.
-* The game will continue until there is a winner (or if you lose you can force a restart...)
-* You can play again after winning/losing.
+3. **You will see AI players automatically playing game.**
 
-## Roadmap
+4. **Enjoy the game!**
 
-See the [open issues](https://github.com/dirkbrnd/resistance_coup/issues) for a list of proposed features (and known issues).
+## LLM Game Player Implementation with LangGraph
 
-## Contributing
+This project leverages the power of LangGraph to create intelligent AI opponents that can understand and respond to the game's dynamics. The LLM is used to:
 
-Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-* If you have suggestions for adding or removing projects, feel free to [open an issue](https://github.com/dirkbrnd/resistance_coup/issues/new) to discuss it, or directly create a pull request.
-* Please make sure you check your spelling and grammar.
-* Create individual PR for each suggestion.
+* **Analyze the game state:** The AI assesses the current situation, including the cards in play, the actions taken by other players, and the overall game progress.
+* **Make strategic decisions:** Based on its analysis, the AI decides which actions to take, aiming to maximize its chances of winning.
+* **Adapt to different players:** The AI can learn from previous games and adjust its strategies based on the behavior of its opponents.
 
-### Local setup for development
-After you have cloned the repo:
-
-1. Install the game
-
-```sh
-poetry install
-```
-
-2. Set up the pre-commit hooks
-
-```sh
-pre-commit install
-```
-
-3. Make your changes on a branch and create a PR!
-
-
-### Creating A Pull Request
-
-1. Clone the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-Distributed under the MIT License. See [LICENSE](https://github.com/dirkbrnd/Resistance Coup/blob/main/LICENSE.md) for more information.
-
-## Acknowledgements
-
-* [Aaron Yuan](https://www.linkedin.com/in/aaron-yuan-776312a5/) for the inspiration!
-
+This integration of LLM and LangGraph brings a new dimension to the gameplay, making the AI opponents more challenging and unpredictable.
